@@ -2,6 +2,11 @@
 #define PID_H
 
 class PID {
+private:
+  int steps;
+  double integral_error;
+  double prev_cte;
+  double steer;
 public:
   /*
   * Errors
@@ -36,6 +41,11 @@ public:
   * Update the PID error variables given cross track error.
   */
   void UpdateError(double cte);
+
+  /*
+   * Returns steering angle
+   */
+  double GetSteer();
 
   /*
   * Calculate the total PID error.
