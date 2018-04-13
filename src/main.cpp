@@ -34,11 +34,12 @@ int main()
 
   PID steer_pid;
   PID speed_pid;
+  int n = 0;
 
   steer_pid.Init(0.15, 0.005, 2);
-  speed_pid.Init(0.04, 0.0001, 0.5);
+  speed_pid.Init(0.06, 0.0002, 1);
 
-  h.onMessage([&steer_pid, &speed_pid](uWS::WebSocket<uWS::SERVER> ws, char *data, size_t length, uWS::OpCode opCode) {
+  h.onMessage([&steer_pid, &speed_pid, &n](uWS::WebSocket<uWS::SERVER> ws, char *data, size_t length, uWS::OpCode opCode) {
     // "42" at the start of the message means there's a websocket message event.
     // The 4 signifies a websocket message
     // The 2 signifies a websocket event
@@ -56,12 +57,14 @@ int main()
           double steer_value;
 
           steer_pid.UpdateError(cte);
-          steer_value = steer_pid.GetSteer();
+          steer_value = steer_pid.GetOutput();
 
           double speed_error = speed - 40;  // Target speed 60 mph
           speed_pid.UpdateError(speed_error);
-          double throttle = speed_pid.GetSteer();
-          printf("cte=%6.3f steer=%6.3f speed_error=%6.3f throttle=%6.3f\n", cte, steer_value, speed_error, throttle);
+          double throttle = speed_pid.GetOutput();
+
+          n++;
+          printf("n=%d cte=%6.3f steer=%6.3f speed_error=%6.3f throttle=%6.3f\n", n, cte, steer_value, speed_error, throttle);
 
           /*
           * TODO: Calcuate steering value here, remember the steering value is

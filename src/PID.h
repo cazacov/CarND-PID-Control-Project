@@ -1,12 +1,20 @@
 #ifndef PID_H
 #define PID_H
 
+#include <vector>
+#include <queue>
+
 class PID {
 private:
   int steps;
   double integral_error;
+  double total_error;
   double prev_cte;
-  double steer;
+  double output;
+  int integral_queue_size;
+  int error_queue_size;
+  std::queue<double>  integral_queue;
+  std::queue<double>  error_queue;
 public:
   /*
   * Errors
@@ -35,7 +43,7 @@ public:
   /*
   * Initialize PID.
   */
-  void Init(double Kp, double Ki, double Kd);
+  void Init(double Kp, double Ki, double Kd, int integral_queue_size = 500, int error_queue_size = 500);
 
   /*
   * Update the PID error variables given cross track error.
@@ -45,7 +53,7 @@ public:
   /*
    * Returns steering angle
    */
-  double GetSteer();
+  double GetOutput();
 
   /*
   * Calculate the total PID error.

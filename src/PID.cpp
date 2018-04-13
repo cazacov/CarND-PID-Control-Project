@@ -3,24 +3,36 @@
 
 using namespace std;
 
-/*
-* TODO: Complete the PID class.
-*/
-
 PID::PID() {}
 
 PID::~PID() {}
 
-void PID::Init(double Kp, double Ki, double Kd) {
+void PID::Init(double Kp, double Ki, double Kd, int integral_queue_size, int error_queue_size) {
   this->Kp = Kp;
   this->Ki = Ki;
   this->Kd = Kd;
   steps = 0;
   integral_error = 0;
+  total_error = 0;
+  this->integral_queue_size = integral_queue_size;
+  this->error_queue_size = error_queue_size;
 }
 
 void PID::UpdateError(double cte) {
+
   integral_error += cte;
+  integral_queue.push(cte);
+  if (integral_queue.size() >= integral_queue_size) {
+    integral_error -= integral_queue.front();
+    integral_queue.pop();
+  }
+
+  total_error += cte*cte;
+  error_queue.push(cte*cte);
+  if (error_queue.size() >= error_queue_size) {
+    total_error -= error_queue.front();
+    error_queue.pop();
+  }
 
   double diff_cte = cte - prev_cte;
   prev_cte = cte;
@@ -30,13 +42,13 @@ void PID::UpdateError(double cte) {
     diff_cte = 0;
   }
 
-  steer = -Kp * cte - Kd * diff_cte - Ki * integral_error;
+  output = -Kp * cte - Kd * diff_cte - Ki * integral_error;
 
-  if (steer > 1) {
-    steer = 1;
+  if (output > 1) {
+    output = 1;
   }
-  if (steer < -1) {
-    steer = -1;
+  if (output < -1) {
+    output = -1;
   }
 
   //printf("N: %4d cte=%6.3f steer=%5.3f diff=%5.3f integral_error=%5.2f\n", steps, cte, steer, diff_cte, integral_error);
@@ -45,9 +57,10 @@ void PID::UpdateError(double cte) {
 }
 
 double PID::TotalError() {
+  return total_error;
 }
 
-double PID::GetSteer() {
-  return steer;
+double PID::GetOutput() {
+  return output;
 }
 
