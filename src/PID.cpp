@@ -1,5 +1,6 @@
 #include "PID.h"
 #include <stdio.h>
+#include <utility>
 
 using namespace std;
 
@@ -7,7 +8,7 @@ PID::PID() {}
 
 PID::~PID() {}
 
-void PID::Init(double Kp, double Ki, double Kd, int integral_queue_size, int error_queue_size) {
+void PID::Init(double Kp, double Ki, double Kd, int error_queue_size, int integral_queue_size) {
   this->Kp = Kp;
   this->Ki = Ki;
   this->Kd = Kd;
@@ -16,6 +17,9 @@ void PID::Init(double Kp, double Ki, double Kd, int integral_queue_size, int err
   total_error = 0;
   this->integral_queue_size = integral_queue_size;
   this->error_queue_size = error_queue_size;
+
+  integral_queue = std::queue<double>();
+  error_queue = std::queue<double>();
 }
 
 void PID::UpdateError(double cte) {

@@ -4,6 +4,9 @@
 #include "PID.h"
 #include <math.h>
 
+
+#define track_length 1250
+
 // for convenience
 using json = nlohmann::json;
 
@@ -36,10 +39,21 @@ int main()
   PID speed_pid;
   int n = 0;
 
-  steer_pid.Init(0.15, 0.005, 2);
-  speed_pid.Init(0.06, 0.0002, 1);
+  // Speed controller
+  speed_pid.Init(0.06, 0.0002, 1, 500, 500);
 
-  h.onMessage([&steer_pid, &speed_pid, &n](uWS::WebSocket<uWS::SERVER> ws, char *data, size_t length, uWS::OpCode opCode) {
+  // Twiddle parameters
+  double p[] = {0.16, 0.004, 3};
+  double dp[] = {0.04, 0.001, 0.7};
+  bool try_opposite[] = {true, true, true};
+  int dp_index = 0;
+  double best_error = std::numeric_limits<double>::max();
+
+  steer_pid.Init(p[0], p[1], p[2], track_length - 200);
+  printf("\nInitialization: PID: %5.3f %5.3f %5.3f  DP: %5.3f %5.3f %5.3f \n\n",
+         p[0], p[1], p[2], dp[0], dp[1], dp[2]);
+
+  h.onMessage([&steer_pid, &speed_pid, &n, &p, &dp, &best_error, &dp_index, &try_opposite](uWS::WebSocket<uWS::SERVER> ws, char *data, size_t length, uWS::OpCode opCode) {
     // "42" at the start of the message means there's a websocket message event.
     // The 4 signifies a websocket message
     // The 2 signifies a websocket event
@@ -64,7 +78,11 @@ int main()
           double throttle = speed_pid.GetOutput();
 
           n++;
-          printf("n=%d cte=%6.3f steer=%6.3f speed_error=%6.3f throttle=%6.3f\n", n, cte, steer_value, speed_error, throttle);
+
+          if (n%100 == 0) {
+            printf("n=%d cte=%6.3f steer=%6.3f speed_error=%6.3f throttle=%6.3f  total error=%7f\n", n, cte, steer_value, speed_error,
+                   throttle, steer_pid.TotalError());
+          }
 
           /*
           * TODO: Calcuate steering value here, remember the steering value is
@@ -82,6 +100,53 @@ int main()
           auto msg = "42[\"steer\"," + msgJson.dump() + "]";
           //std::cout << msg << std::endl;
           ws.send(msg.data(), msg.length(), uWS::OpCode::TEXT);
+
+
+          if (n % track_length  == 0)
+          {
+            if (n == track_length )
+            {
+              // First iteration
+              best_error = steer_pid.TotalError();
+              p[dp_index] += dp[dp_index];
+              printf("\nInitialization: best error = %7f\n", best_error);
+              printf("PID: %5.3f %5.3f %5.3f  DP: %5.3f %5.3f %5.3f \n\n", p[0], p[1], p[2], dp[0], dp[1], dp[2]);
+              steer_pid.Init(p[0], p[1], p[2], track_length-200);
+            }
+            else {
+
+              bool optimize_next_parameter = false;
+
+              // optimize PID parameters
+              if (steer_pid.TotalError() <= best_error) {
+                best_error = steer_pid.TotalError();
+                dp[dp_index] *= 1.1;
+                optimize_next_parameter = true;
+                try_opposite[dp_index] = true;
+              } else {
+                if (try_opposite[dp_index]) {
+                  p[dp_index] -= 2 * dp[dp_index];
+                } else {
+                  p[dp_index] += dp[dp_index];
+                  dp[dp_index] *= 0.9;
+                  optimize_next_parameter = true;
+                }
+                try_opposite[dp_index] = !try_opposite[dp_index];
+              }
+
+              if(optimize_next_parameter) {
+                // switch to next parameter
+                dp_index = (dp_index + 1) % 3;
+                printf("New parameter index: %d", dp_index);
+                p[dp_index] += dp[dp_index];
+              }
+
+              printf("\nIteration %d  best error = %7f  current error = %7f   PID: %5.3f %5.3f %5.3f  DP: %5.3f %5.3f %5.3f \n\n",
+                     n / track_length , best_error, steer_pid.TotalError(), p[0], p[1], p[2], dp[0], dp[1], dp[2]
+              );
+              steer_pid.Init(p[0], p[1], p[2], track_length-200);
+            }
+          }
         }
       } else {
         // Manual driving

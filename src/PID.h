@@ -43,7 +43,7 @@ public:
   /*
   * Initialize PID.
   */
-  void Init(double Kp, double Ki, double Kd, int integral_queue_size = 500, int error_queue_size = 500);
+  void Init(double Kp, double Ki, double Kd, int error_queue_size, int integral_queue_size = 200);
 
   /*
   * Update the PID error variables given cross track error.
