@@ -5,7 +5,7 @@
 #include <math.h>
 
 
-#define track_length 1250
+#define track_length 2350
 
 // for convenience
 using json = nlohmann::json;
@@ -43,8 +43,8 @@ int main()
   speed_pid.Init(0.06, 0.0002, 1, 500, 500);
 
   // Twiddle parameters
-  double p[] = {0.16, 0.004, 3};
-  double dp[] = {0.04, 0.001, 0.7};
+  double p[] = {0.15, 0.01, 2.0};
+  double dp[] = {0.03, 0.002, 0.4};
   bool try_opposite[] = {true, true, true};
   int dp_index = 0;
   double best_error = std::numeric_limits<double>::max();
