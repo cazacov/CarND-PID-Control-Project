@@ -39,11 +39,11 @@ int main()
   PID speed_pid;
   int n = 0;
 
-  // Speed controller
-  speed_pid.Init(0.06, 0.0002, 1, 500, 500);
+  // Speed controller tries to keep vehicle's velocity close to 40 MPH
+  speed_pid.Init(0.060, 0.0003, 1, 500, 500);
 
   // Twiddle parameters
-  double p[] = {0.15, 0.01, 2.0};
+  double p[] = {0.1500, 0.0100, 2.000};
   double dp[] = {0.03, 0.002, 0.4};
   bool try_opposite[] = {true, true, true};
   int dp_index = 0;
@@ -70,10 +70,17 @@ int main()
           double angle = std::stod(j[1]["steering_angle"].get<std::string>());
           double steer_value;
 
+          /*
+          * TODO: Calcuate steering value here, remember the steering value is
+          * [-1, 1].
+          * NOTE: Feel free to play around with the throttle and speed. Maybe use
+          * another PID controller to control the speed!
+          */
+
           steer_pid.UpdateError(cte);
           steer_value = steer_pid.GetOutput();
 
-          double speed_error = speed - 40;  // Target speed 60 mph
+          double speed_error = speed - 40;  // Target speed 40 MPH
           speed_pid.UpdateError(speed_error);
           double throttle = speed_pid.GetOutput();
 
@@ -84,13 +91,6 @@ int main()
                    throttle, steer_pid.TotalError());
           }
 
-          /*
-          * TODO: Calcuate steering value here, remember the steering value is
-          * [-1, 1].
-          * NOTE: Feel free to play around with the throttle and speed. Maybe use
-          * another PID controller to control the speed!
-          */
-          
           // DEBUG
           //std::cout << "CTE: " << cte << " Steering Value: " << steer_value << std::endl;
 
@@ -101,12 +101,14 @@ int main()
           //std::cout << msg << std::endl;
           ws.send(msg.data(), msg.length(), uWS::OpCode::TEXT);
 
+          // Twiddle (coordinate ascent) optimization of hyperparameters
 
-          if (n % track_length  == 0)
+
+          if (n % track_length  == 0)   // Run optimization every 2350 frames
           {
-            if (n == track_length )
+
+            if (n == track_length )  // The first iteration
             {
-              // First iteration
               best_error = steer_pid.TotalError();
               p[dp_index] += dp[dp_index];
               printf("\nInitialization: best error = %7f\n", best_error);
@@ -135,7 +137,7 @@ int main()
               }
 
               if(optimize_next_parameter) {
-                // switch to next parameter
+                // switch to the next parameter
                 dp_index = (dp_index + 1) % 3;
                 printf("New parameter index: %d", dp_index);
                 p[dp_index] += dp[dp_index];

@@ -39,7 +39,8 @@ void PID::UpdateError(double cte) {
     integral_queue.pop();
   }
 
-  double loss = cte*cte + 10 * diff_cte * diff_cte;
+  double loss = cte*cte;              // Penalize leaving middle of the row
+  loss += 10 * diff_cte * diff_cte;   // Penalize intensive steering
 
   total_error += loss;
   error_queue.push(loss);
@@ -49,7 +50,7 @@ void PID::UpdateError(double cte) {
   }
 
 
-
+  // PID controller
   output = -Kp * cte - Kd * diff_cte - Ki * integral_error;
 
   if (output > 1) {
