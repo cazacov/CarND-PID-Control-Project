@@ -44,6 +44,10 @@ int main()
 
   // Twiddle parameters
   double p[] = {0.1500, 0.0100, 2.000};
+
+  //p[0] = 0.1625; p[1] = 0.0063; p[2] = 1.640;    // Uncomment this line to start with the best known PID parameters
+
+
   double dp[] = {0.03, 0.002, 0.4};
   bool try_opposite[] = {true, true, true};
   int dp_index = 0;
